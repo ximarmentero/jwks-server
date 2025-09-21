@@ -7,7 +7,7 @@ name = "jwks-server"
 version = "0.1.0"
 description = "Basic JWKS server (FastAPI) with JWKS + /auth"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.9"
 dependencies = [
   "fastapi>=0.110",
   "uvicorn[standard]>=0.27",
@@ -34,4 +34,6 @@ target-version = ["py310"]
 
 [tool.ruff]
 line-length = 100
+
+[tool.ruff.lint]
 select = ["E", "F", "I"]

@@ -8,10 +8,10 @@ import jwt
 from .crypto_utils import (
     KeyRecord,
     gen_rsa_keypair,
-    new_kid,
-    public_numbers_to_jwk,
-    now_utc,
     minutes_from_now,
+    new_kid,
+    now_utc,
+    public_numbers_to_jwk,
 )
 
 
@@ -40,9 +40,16 @@ class KeyStore:
         return [k for k in [self.current] if k.expires_at > now_utc()]
 
     def as_jwks(self) -> Dict:
-        return {"keys": [public_numbers_to_jwk(k.private_key.public_key(), k.kid) for k in self.unexpired_keys()]}
+        return {
+            "keys": [
+                public_numbers_to_jwk(k.private_key.public_key(), k.kid)
+                for k in self.unexpired_keys()
+            ]
+        }
 
-    def build_jwt(self, use_expired: bool = False, payload_extra: Optional[Dict] = None) -> Tuple[str, KeyRecord]:
+    def build_jwt(
+        self, use_expired: bool = False, payload_extra: Optional[Dict] = None
+    ) -> Tuple[str, KeyRecord]:
         rec = self.expired if use_expired else self.current
         headers = {"kid": rec.kid, "alg": "RS256", "typ": "JWT"}
         payload = {

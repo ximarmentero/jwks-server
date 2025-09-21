@@ -4,8 +4,8 @@ import jwt
 import pytest
 from fastapi.testclient import TestClient
 
-from app.main import app, keystore
 from app.crypto_utils import jwk_to_public_key
+from app.main import app, keystore
 
 client = TestClient(app)
 
@@ -30,7 +30,9 @@ def test_auth_returns_valid_unexpired_token():
     jwks = client.get("/.well-known/jwks.json").json()
     target = next(k for k in jwks["keys"] if k["kid"] == kid)
     pub = jwk_to_public_key(target)
-    decoded = jwt.decode(token, key=pub, algorithms=["RS256"], options={"require": ["exp", "iat", "sub"]})
+    decoded = jwt.decode(
+        token, key=pub, algorithms=["RS256"], options={"require": ["exp", "iat", "sub"]}
+    )
     assert decoded["sub"] == "fake-user-123"
 
 
