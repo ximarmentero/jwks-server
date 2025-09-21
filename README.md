@@ -15,3 +15,13 @@ source .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install -U pip
 pip install -e '.[dev]'
 uvicorn app.main:app --port 8080 --reload
+
+## Screenshots
+
+**Coverage (97%)**
+
+![Coverage](assets/coverage.png)
+
+**Test client hitting `/auth`**
+
+![Test client](assets/test-client.png)
