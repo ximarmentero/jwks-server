@@ -16,3 +16,7 @@ coverage.svg
 assets/.DS_Store
 # coverage output
 coverage.xml
+
+.DS_Store
+assets/.DS_Store
+coverage.xml
