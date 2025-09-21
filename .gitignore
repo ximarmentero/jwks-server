@@ -11,3 +11,8 @@ build/
 .vscode/
 .idea/
 coverage.svg
+# macOS
+.DS_Store
+assets/.DS_Store
+# coverage output
+coverage.xml
