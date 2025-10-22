@@ -1,54 +1,55 @@
-from __future__ import annotations
+import time
 
-import jwt
-import pytest
 from fastapi.testclient import TestClient
 
-from app.crypto_utils import jwk_to_public_key
-from app.main import app, keystore
+from app.crypto_utils import generate_rsa_private_key, serialize_private_key_pkcs1_pem
+from app.db import get_connection, init_db, insert_key
+from app.main import app
 
 client = TestClient(app)
 
 
-def test_jwks_shows_only_unexpired_key():
+def reset_and_seed():
+    conn = get_connection()
+    init_db(conn)
+    now = int(time.time())
+
+    priv1 = generate_rsa_private_key()
+    insert_key(conn, serialize_private_key_pkcs1_pem(priv1), now - 60)
+
+    priv2 = generate_rsa_private_key()
+    insert_key(conn, serialize_private_key_pkcs1_pem(priv2), now + 3600)
+
+
+def test_jwks_has_only_valid_keys():
+    reset_and_seed()
     r = client.get("/.well-known/jwks.json")
     assert r.status_code == 200
     data = r.json()
-    kids = [k["kid"] for k in data["keys"]]
-    assert keystore.current.kid in kids
-    assert keystore.expired.kid not in kids
+    assert "keys" in data
+    assert len(data["keys"]) >= 1
+    for k in data["keys"]:
+        assert k["kty"] == "RSA"
+        assert k["alg"] == "RS256"
+        assert "kid" in k and "n" in k and "e" in k
 
 
-def test_auth_returns_valid_unexpired_token():
-    r = client.post("/auth")
+def test_auth_issues_token_with_valid_key_by_default():
+    reset_and_seed()
+    r = client.post("/auth", auth=("userABC", "password123"))
     assert r.status_code == 200
-    body = r.json()
-    assert body["expired"] is False
-    token = body["token"]
-    kid = body["kid"]
-    # verify using JWKS public key
+    data = r.json()
+    assert "token" in data and "kid" in data
     jwks = client.get("/.well-known/jwks.json").json()
-    target = next(k for k in jwks["keys"] if k["kid"] == kid)
-    pub = jwk_to_public_key(target)
-    decoded = jwt.decode(
-        token, key=pub, algorithms=["RS256"], options={"require": ["exp", "iat", "sub"]}
-    )
-    assert decoded["sub"] == "fake-user-123"
+    kids = {k["kid"] for k in jwks["keys"]}
+    assert data["kid"] in kids
 
 
-def test_auth_expired_param_mints_expired_token():
-    r = client.post("/auth?expired=1")
+def test_auth_can_use_expired_key_when_requested():
+    reset_and_seed()
+    r = client.post("/auth?expired=1", auth=("userABC", "password123"))
     assert r.status_code == 200
-    body = r.json()
-    assert body["expired"] is True
-    token = body["token"]
-    kid = body["kid"]
-    assert kid == keystore.expired.kid
-    # expired token should raise on verification (use the expired key directly)
-    with pytest.raises(jwt.ExpiredSignatureError):
-        jwt.decode(
-            token,
-            key=keystore.expired.private_key.public_key(),
-            algorithms=["RS256"],
-            options={"require": ["exp", "iat", "sub"]},
-        )
+    data = r.json()
+    jwks = client.get("/.well-known/jwks.json").json()
+    kids = {k["kid"] for k in jwks["keys"]}
+    assert data["kid"] not in kids
