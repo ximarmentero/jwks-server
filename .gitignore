@@ -36,3 +36,4 @@ __pycache__/
 totally_not_my_privateKeys.db
 totally_not_my_privateKeys.db-shm
 totally_not_my_privateKeys.db-wal
+coverage.xml
