@@ -26,3 +26,11 @@ uvicorn app.main:app --port 8080 --reload
 **Test client hitting `/auth`**
 
 ![Test client](assets/test-client.png)
+
+**Gradebot result**
+
+![Gradebot](assets/gradebot_output.png)
+
+**Test coverage**
+
+![Coverage](assets/test_coverage2.png)
